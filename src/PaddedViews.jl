@@ -219,7 +219,20 @@ function _extended_axes(A, inds, dims::UnitRange{Int64})
     end
     return inds
 end
+# Zero, one, and two arrays are common, improve inferrability
 paddedviews(fillvalue) = ()
+paddedviews(fillvalue, A1::AbstractArray) = (PaddedView(fillvalue, A1, outerinds(A1)),)
+function paddedviews(fillvalue, A1::AbstractArray, A2::AbstractArray)
+    inds = outerinds(A1, A2)
+    PaddedView(fillvalue, A1, inds), PaddedView(fillvalue, A2, inds)
+end
+
+# This is an (unexported) optimization if you're supplying the arrays from a vector.
+# MosaicViews uses this.
+function paddedviews_itr(fillvalue, itr)
+    inds = outerinds(itr...)
+    [PaddedView(fillvalue, A, inds) for A in itr]
+end
 
 @inline outerinds(A::AbstractArray, Bs...) = _outerinds(axes(A), Bs...)
 @inline _outerinds(inds, A::AbstractArray, Bs...) =
